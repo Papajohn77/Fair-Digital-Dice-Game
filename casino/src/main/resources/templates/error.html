@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Error – Casino</title>
+    <link rel="stylesheet" th:href="@{/css/main.css}"/>
+</head>
+<body>
+    <main class="auth-container">
+        <h1>Something went wrong</h1>
+
+        <div th:if="${status}" class="error-box">
+            <p><strong th:text="${status + ' ' + error}"></strong></p>
+            <p th:text="${message}"></p>
+        </div>
+
+        <div class="text-center">
+            <a th:href="@{/game}" class="btn-primary">Back to home</a>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Game – Casino</title>
+    <link rel="stylesheet" th:href="@{/css/main.css}"/>
+    <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+    <script th:src="@{/js/htmx-csrf.js}" defer></script>
+</head>
+<body hx-boost="true">
+    <div id="csrf-token" th:data-token="${_csrf.token}" th:data-header="${_csrf.headerName}" class="hidden"></div>
+    <nav class="navbar">
+        <span>Welcome, <strong sec:authentication="name"></strong></span>
+        <form th:action="@{/auth/logout}" method="post">
+            <button type="submit" class="btn-secondary">Logout</button>
+        </form>
+    </nav>
+    <main class="game-container">
+        <h1>Fair Dice Game</h1>
+        <p class="placeholder-text">
+            The game protocol will be implemented here in a future iteration.
+        </p>
+    </main>
+</body>
+</html>

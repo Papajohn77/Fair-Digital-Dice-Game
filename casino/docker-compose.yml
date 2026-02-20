@@ -1,0 +1,64 @@
+services:
+  postgres-db-dev:
+    image: postgres:18-alpine
+    container_name: postgres-db-dev
+    volumes:
+      - postgres-data-dev:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: casino
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: GDPR
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "casino", "-d", "GDPR"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+
+  pgadmin-dev:
+    image: dpage/pgadmin4:9.12
+    container_name: pgadmin-dev
+    volumes:
+      - pgadmin-data-dev:/var/lib/pgadmin
+    ports:
+      - "8000:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@casino.gr
+      PGADMIN_DEFAULT_PASSWORD: mysecretpassword
+    restart: unless-stopped
+    depends_on:
+      postgres-db-dev:
+        condition: service_healthy
+
+  redis-cache-dev:
+    image: redis:8.6-alpine
+    container_name: redis-cache-dev
+    volumes:
+      - redis-data-dev:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+
+  redisinsight-dev:
+    image: redis/redisinsight:3.0
+    container_name: redisinsight-dev
+    ports:
+      - "8001:5540"
+    volumes:
+      - redisinsight-data-dev:/db
+    restart: unless-stopped
+    depends_on:
+      - redis-cache-dev
+
+volumes:
+  postgres-data-dev:
+  pgadmin-data-dev:
+  redis-data-dev:
+  redisinsight-data-dev:
