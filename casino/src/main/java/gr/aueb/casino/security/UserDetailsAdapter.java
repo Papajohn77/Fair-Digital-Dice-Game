@@ -17,17 +17,23 @@ public class UserDetailsAdapter implements UserDetails, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final Long id;
+    private final String firstName;
     private final String email;
     private final String password;
 
     public UserDetailsAdapter(User user) {
         this.id = user.getId();
+        this.firstName = user.getFirstName();
         this.email = user.getEmail();
         this.password = user.getPassword();
     }
 
     public Long getId() {
         return id;
+    }
+
+    public String getFirstName() {
+        return firstName;
     }
 
     @Override

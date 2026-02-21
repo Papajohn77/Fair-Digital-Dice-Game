@@ -12,7 +12,7 @@
 <body>
     <div id="csrf-token" th:data-token="${_csrf.token}" th:data-header="${_csrf.headerName}" class="hidden"></div>
     <nav class="navbar">
-        <span>Welcome, <strong sec:authentication="name"></strong></span>
+        <span>Welcome, <strong sec:authentication="principal.firstName"></strong></span>
         <form th:action="@{/auth/logout}" method="post">
             <button type="submit" class="btn-secondary">Logout</button>
         </form>
