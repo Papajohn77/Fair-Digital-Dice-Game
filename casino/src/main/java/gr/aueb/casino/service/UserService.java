@@ -1,7 +1,7 @@
 package gr.aueb.casino.service;
 
+import org.springframework.security.authentication.password.CompromisedPasswordChecker;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.password.HaveIBeenPwnedRestApiPasswordChecker;
 import org.springframework.stereotype.Service;
 
 import gr.aueb.casino.api.schemas.request.RegisterRequest;
@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final HaveIBeenPwnedRestApiPasswordChecker compromisedPasswordChecker;
+    private final CompromisedPasswordChecker compromisedPasswordChecker;
 
     public void register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
