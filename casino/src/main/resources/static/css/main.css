@@ -71,6 +71,7 @@ body {
 .btn-secondary {
     background: #ecf0f1;
     color: #333;
+    font-weight: 600;
 }
 
 .alert {
@@ -93,6 +94,9 @@ body {
 }
 
 .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -105,6 +109,10 @@ body {
     max-width: 800px;
     margin: 40px auto;
     padding: 2rem;
+}
+
+.game-container > h1 {
+    margin-bottom: 1rem;
 }
 
 .placeholder-text {
@@ -209,4 +217,75 @@ body {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+.game-history {
+    margin-top: 3rem;
+}
+
+.game-history h1 {
+    margin-bottom: 1rem;
+}
+
+.history-table {
+    width: 100%;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.1);
+    border-collapse: collapse;
+}
+
+.history-table thead {
+    background: #2c3e50;
+    color: #fff;
+}
+
+.history-table th {
+    padding: .75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+}
+
+.history-table td {
+    padding: .75rem 1rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.history-table td:nth-child(1),
+.history-table td:nth-child(2) {
+    font-weight: 700;
+}
+
+.history-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.outcome-badge {
+    display: inline-block;
+    padding: .25rem .75rem;
+    border-radius: 12px;
+    font-size: .85rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.outcome-badge.client-win {
+    background: #d4edda;
+    color: #155724;
+}
+
+.outcome-badge.server-win {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.outcome-badge.tie {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.outcome-badge.expired {
+    background: #e2e3e5;
+    color: #383d41;
 }

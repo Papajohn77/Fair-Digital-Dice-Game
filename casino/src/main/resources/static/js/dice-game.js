@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultArea = document.getElementById('game-result');
     const errorArea = document.getElementById('game-error');
 
+    formatTimestamps();
+
     rollButton.addEventListener('click', async () => {
         try {
             rollButton.disabled = true;
@@ -57,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             showResult(clientRoll, serverRoll, gameOutcome);
+            updateGameHistory(clientRoll, serverRoll, gameOutcome);
         } catch (error) {
             window.location.href = '/error';
         } finally {
@@ -104,10 +107,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showResult(clientRoll, serverRoll, gameOutcome) {
         const outcomeText =
-            gameOutcome === 'CLIENT_WIN' ? 'You won!' :
-            gameOutcome === 'SERVER_WIN' ? 'You lost!' :
-            gameOutcome === 'TIE' ? 'It\'s a tie!' :
-            'Game expired!';
+            gameOutcome === 'CLIENT_WIN' ? 'You Won!' :
+            gameOutcome === 'SERVER_WIN' ? 'You Lost!' :
+            gameOutcome === 'TIE' ? 'It\'s a Tie!' :
+            'Game Expired!';
 
         resultArea.replaceChildren();
 
@@ -121,13 +124,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (gameOutcome !== 'EXPIRED') {
             const clientRollP = document.createElement('p');
-            clientRollP.textContent = 'Your roll: ';
+            clientRollP.textContent = 'Your Roll: ';
             const clientRollStrong = document.createElement('strong');
             clientRollStrong.textContent = clientRoll;
             clientRollP.appendChild(clientRollStrong);
 
             const serverRollP = document.createElement('p');
-            serverRollP.textContent = 'Server roll: ';
+            serverRollP.textContent = 'Server Roll: ';
             const serverRollStrong = document.createElement('strong');
             serverRollStrong.textContent = serverRoll;
             serverRollP.appendChild(serverRollStrong);
@@ -142,5 +145,96 @@ document.addEventListener('DOMContentLoaded', () => {
     function showError(message) {
         errorArea.textContent = message;
         errorArea.classList.remove('hidden');
+    }
+
+    function updateGameHistory(clientRoll, serverRoll, gameOutcome) {
+        const historyTable = document.querySelector('.history-table tbody');
+        if (!historyTable) {
+            createGameHistorySection(clientRoll, serverRoll, gameOutcome);
+            return;
+        }
+
+        const newRow = createHistoryRow(clientRoll, serverRoll, gameOutcome);
+        historyTable.insertBefore(newRow, historyTable.firstChild);
+
+        const rows = historyTable.querySelectorAll('tr');
+        if (rows.length > 5) {
+            historyTable.removeChild(rows[rows.length - 1]);
+        }
+    }
+
+    function createGameHistorySection(clientRoll, serverRoll, gameOutcome) {
+        const gameContainer = document.querySelector('.game-container');
+        const historySection = document.createElement('div');
+        historySection.className = 'game-history';
+
+        const heading = document.createElement('h1');
+        heading.textContent = 'Recent Games';
+        historySection.appendChild(heading);
+
+        const table = document.createElement('table');
+        table.className = 'history-table';
+
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+            <tr>
+                <th>Your Roll</th>
+                <th>Server Roll</th>
+                <th>Outcome</th>
+                <th>Completed At</th>
+            </tr>
+        `;
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        tbody.appendChild(createHistoryRow(clientRoll, serverRoll, gameOutcome));
+        table.appendChild(tbody);
+
+        historySection.appendChild(table);
+        gameContainer.appendChild(historySection);
+    }
+
+    function createHistoryRow(clientRoll, serverRoll, gameOutcome) {
+        const row = document.createElement('tr');
+
+        const clientRollCell = document.createElement('td');
+        clientRollCell.textContent = clientRoll;
+        row.appendChild(clientRollCell);
+
+        const serverRollCell = document.createElement('td');
+        serverRollCell.textContent = serverRoll;
+        row.appendChild(serverRollCell);
+
+        const outcomeCell = document.createElement('td');
+        const outcomeBadge = document.createElement('span');
+        outcomeBadge.className = `outcome-badge ${gameOutcome.toLowerCase().replace('_', '-')}`;
+        outcomeBadge.textContent = gameOutcome.replace('_', ' ');
+        outcomeCell.appendChild(outcomeBadge);
+        row.appendChild(outcomeCell);
+
+        const timestampCell = document.createElement('td');
+        timestampCell.className = 'timestamp';
+        timestampCell.textContent = formatTimestamp(new Date());
+        row.appendChild(timestampCell);
+
+        return row;
+    }
+
+    function formatTimestamps() {
+        document.querySelectorAll('.timestamp').forEach(cell => {
+            const timestamp = cell.dataset.timestamp;
+            if (timestamp) {
+                const date = new Date(timestamp);
+                cell.textContent = formatTimestamp(date);
+            }
+        });
+    }
+
+    function formatTimestamp(date) {
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${day}/${month}, ${hours}:${minutes}`;
     }
 });

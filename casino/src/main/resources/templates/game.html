@@ -25,6 +25,31 @@
             <div id="game-result" class="game-result hidden"></div>
             <div id="game-error" class="alert alert-error hidden"></div>
         </div>
+
+        <div class="game-history" th:if="${!recentGames.isEmpty()}">
+            <h1>Recent Games</h1>
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Your Roll</th>
+                        <th>Server Roll</th>
+                        <th>Outcome</th>
+                        <th>Completed At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="game : ${recentGames}">
+                        <td th:text="${game.clientRoll()}"></td>
+                        <td th:text="${game.serverRoll()}"></td>
+                        <td>
+                            <span th:class="${'outcome-badge ' + game.outcome().toLowerCase().replace('_', '-')}"
+                                  th:text="${game.outcome().replace('_', ' ')}"></span>
+                        </td>
+                        <td class="timestamp" th:attr="data-timestamp=${game.completedAt()}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </main>
 </body>
 </html>

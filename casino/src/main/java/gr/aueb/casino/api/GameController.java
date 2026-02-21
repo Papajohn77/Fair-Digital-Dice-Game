@@ -2,6 +2,7 @@ package gr.aueb.casino.api;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,7 +26,8 @@ public class GameController {
     private final GameService gameService;
 
     @GetMapping
-    public String gamePage() {
+    public String gamePage(@AuthenticationPrincipal UserDetailsAdapter userDetails, Model model) {
+        model.addAttribute("recentGames", gameService.getRecentGames(userDetails.getId()));
         return "game";
     }
 

@@ -7,11 +7,13 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gr.aueb.casino.api.schemas.response.GameHistoryResponse;
 import gr.aueb.casino.api.schemas.response.GuessResponse;
 import gr.aueb.casino.api.schemas.response.InitiateGameResponse;
 import gr.aueb.casino.domain.Game;
@@ -137,5 +139,17 @@ public class GameService {
         } else {
             return gameOutcomeCache.getClientWin();
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<GameHistoryResponse> getRecentGames(Long userId) {
+        return gameRepository.findTop5CompletedByUserId(userId).stream()
+            .map(game -> new GameHistoryResponse(
+                game.getServerRoll(),
+                game.getClientRoll(),
+                game.getOutcome().getName(),
+                game.getCompletedAt()
+            ))
+            .toList();
     }
 }
