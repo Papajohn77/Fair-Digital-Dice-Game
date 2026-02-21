@@ -47,8 +47,8 @@ public class SecurityConfig {
             .headers(headers -> headers
                 .contentSecurityPolicy(csp -> csp.policyDirectives(
                     "default-src 'self'; " +
-                    "script-src 'self' https://unpkg.com; " +
-                    "style-src 'self' 'sha256-bsV5JivYxvGywDAZ22EZJKBFip65Ng9xoJVLbBg7bdo='; " +
+                    "script-src 'self'; " +
+                    "style-src 'self'; " +
                     "img-src 'self'; " +
                     "connect-src 'self'; " +
                     "form-action 'self'; " +

@@ -16,17 +16,23 @@ public class UserDetailsAdapter implements UserDetails, Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    private final Long id;
     private final String email;
     private final String password;
 
     public UserDetailsAdapter(User user) {
+        this.id = user.getId();
         this.email = user.getEmail();
         this.password = user.getPassword();
     }
 
+    public Long getId() {
+        return id;
+    }
+
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+    public String getUsername() {
+        return email;
     }
 
     @Override
@@ -35,8 +41,8 @@ public class UserDetailsAdapter implements UserDetails, Serializable {
     }
 
     @Override
-    public String getUsername() {
-        return email;
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
     @Override

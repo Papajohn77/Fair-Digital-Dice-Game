@@ -7,10 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Game – Casino</title>
     <link rel="stylesheet" th:href="@{/css/main.css}"/>
-    <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
-    <script th:src="@{/js/htmx-csrf.js}" defer></script>
+    <script th:src="@{/js/dice-game.js}" defer></script>
 </head>
-<body hx-boost="true">
+<body>
     <div id="csrf-token" th:data-token="${_csrf.token}" th:data-header="${_csrf.headerName}" class="hidden"></div>
     <nav class="navbar">
         <span>Welcome, <strong sec:authentication="name"></strong></span>
@@ -20,9 +19,12 @@
     </nav>
     <main class="game-container">
         <h1>Fair Dice Game</h1>
-        <p class="placeholder-text">
-            The game protocol will be implemented here in a future iteration.
-        </p>
+        <div class="game-area">
+            <button id="roll-dice-btn" class="dice-btn">Roll Dice</button>
+            <div id="spinner" class="spinner hidden"></div>
+            <div id="game-result" class="game-result hidden"></div>
+            <div id="game-error" class="alert alert-error hidden"></div>
+        </div>
     </main>
 </body>
 </html>

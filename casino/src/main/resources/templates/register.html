@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Register – Casino</title>
     <link rel="stylesheet" th:href="@{/css/main.css}"/>
-    <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
-    <script th:src="@{/js/htmx-csrf.js}" defer></script>
 </head>
-<body hx-boost="true">
-    <div id="csrf-token" th:data-token="${_csrf.token}" th:data-header="${_csrf.headerName}" class="hidden"></div>
+<body>
     <main class="auth-container">
         <h1>Create Account</h1>
 
