@@ -51,6 +51,10 @@ public class AuthController {
             bindingResult.rejectValue("confirmPassword", "error.passwordMatch", "Passwords do not match.");
         }
 
+        if (registerRequest.password() != null && registerRequest.password().chars().distinct().count() < 4) {
+            bindingResult.rejectValue("password", "error.uniqueChars", "Password must contain at least 4 unique characters.");
+        }
+
         if (bindingResult.hasErrors()) {
             return "register";
         }

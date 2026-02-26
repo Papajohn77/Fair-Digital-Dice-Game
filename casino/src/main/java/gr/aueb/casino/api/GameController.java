@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import gr.aueb.casino.api.schemas.request.GuessRequest;
 import gr.aueb.casino.api.schemas.request.InitiateGameRequest;
-import gr.aueb.casino.api.schemas.response.GuessResponse;
+import gr.aueb.casino.api.schemas.request.RevealRequest;
 import gr.aueb.casino.api.schemas.response.InitiateGameResponse;
+import gr.aueb.casino.api.schemas.response.RevealResponse;
 import gr.aueb.casino.security.UserDetailsAdapter;
 import gr.aueb.casino.service.GameService;
 import jakarta.validation.Valid;
@@ -37,16 +37,16 @@ public class GameController {
         @Valid @RequestBody InitiateGameRequest request,
         @AuthenticationPrincipal UserDetailsAdapter userDetails
     ) {
-        return gameService.initiateGame(userDetails.getId(), request.clientNonce());
+        return gameService.initiateGame(userDetails.getId(), request.clientNonceHash());
     }
 
-    @PostMapping("/{id}/guess")
+    @PostMapping("/{id}/reveal")
     @ResponseBody
-    public GuessResponse submitGuess(
+    public RevealResponse revealNonces(
         @PathVariable Long id,
-        @Valid @RequestBody GuessRequest request,
+        @Valid @RequestBody RevealRequest request,
         @AuthenticationPrincipal UserDetailsAdapter userDetails
     ) {
-        return gameService.submitGuess(id, request.clientRoll(), userDetails.getId());
+        return gameService.revealNonces(id, request.clientNonce(), userDetails.getId());
     }
 }

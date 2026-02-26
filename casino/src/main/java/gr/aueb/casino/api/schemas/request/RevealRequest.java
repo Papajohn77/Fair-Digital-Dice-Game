@@ -2,11 +2,11 @@ package gr.aueb.casino.api.schemas.request;
 
 import jakarta.validation.constraints.Pattern;
 
-public record InitiateGameRequest(
+public record RevealRequest(
 
     @Pattern(
         regexp = "^[a-f0-9]{64}$",
-        message = "Client nonce hash must be a 64-character hexadecimal string."
+        message = "Client nonce must be a 64-character hexadecimal string."
     )
-    String clientNonceHash
+    String clientNonce
 ) {}

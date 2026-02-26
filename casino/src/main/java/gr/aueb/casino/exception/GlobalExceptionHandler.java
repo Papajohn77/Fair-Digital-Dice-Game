@@ -12,6 +12,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 import gr.aueb.casino.exception.custom.GameAccessDeniedException;
 import gr.aueb.casino.exception.custom.GameNotFoundException;
+import gr.aueb.casino.exception.custom.InvalidNonceException;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -31,6 +32,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleGameAccessDenied(GameAccessDeniedException ex) {
         return ResponseEntity
             .status(HttpStatus.FORBIDDEN)
+            .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ResponseBody
+    @ExceptionHandler(InvalidNonceException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidNonce(InvalidNonceException ex) {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
             .body(Map.of("error", ex.getMessage()));
     }
 

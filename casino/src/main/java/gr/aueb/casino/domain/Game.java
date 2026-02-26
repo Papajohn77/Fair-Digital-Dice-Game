@@ -38,8 +38,8 @@ public class Game {
     @JoinColumn(name = "outcome_id")
     private GameOutcome outcome;
 
-    @Column(name = "server_roll", nullable = false)
-    private short serverRoll;
+    @Column(name = "server_roll")
+    private Short serverRoll;
 
     @Column(name = "client_roll")
     private Short clientRoll;
@@ -47,11 +47,14 @@ public class Game {
     @Column(name = "r_a", nullable = false, length = 64)
     private String serverNonce;
 
-    @Column(name = "r_b", nullable = false, length = 64)
+    @Column(name = "r_b", length = 64)
     private String clientNonce;
 
-    @Column(name = "h_commit", nullable = false, length = 64)
-    private String hashCommitment;
+    @Column(name = "client_nonce_hash", nullable = false, length = 64)
+    private String clientNonceHash;
+
+    @Column(name = "server_nonce_hash", nullable = false, length = 64)
+    private String serverNonceHash;
 
     @Column(name = "initiated_at", nullable = false)
     private ZonedDateTime initiatedAt;
@@ -59,13 +62,12 @@ public class Game {
     @Column(name = "completed_at")
     private ZonedDateTime completedAt;
 
-    public Game(User user, GameStatus status, short serverRoll, String serverNonce, String clientNonce, String hashCommitment) {
+    public Game(User user, GameStatus status, String serverNonce, String clientNonceHash, String serverNonceHash) {
         this.user = user;
         this.status = status;
-        this.serverRoll = serverRoll;
         this.serverNonce = serverNonce;
-        this.clientNonce = clientNonce;
-        this.hashCommitment = hashCommitment;
+        this.clientNonceHash = clientNonceHash;
+        this.serverNonceHash = serverNonceHash;
         this.initiatedAt = ZonedDateTime.now();
     }
 }

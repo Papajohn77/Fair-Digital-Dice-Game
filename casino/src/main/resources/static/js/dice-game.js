@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
             errorArea.classList.add('hidden');
 
             const clientNonce = generateNonce();
-            const clientRoll = generateDiceRoll();
+            const clientNonceHash = await computeHash(clientNonce);
 
             const csrfElement = document.getElementById('csrf-token');
             const csrfToken = csrfElement.dataset.token;
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     [csrfHeader]: csrfToken
                 },
-                body: JSON.stringify({ clientNonce })
+                body: JSON.stringify({ clientNonceHash })
             });
 
             if (!initiateResponse.ok) {
@@ -34,25 +34,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const { gameId, hashCommitment } = await initiateResponse.json();
+            const { gameId, serverNonceHash } = await initiateResponse.json();
 
-            const guessResponse = await fetch(`/game/${gameId}/guess`, {
+            const revealResponse = await fetch(`/game/${gameId}/reveal`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     [csrfHeader]: csrfToken
                 },
-                body: JSON.stringify({ clientRoll })
+                body: JSON.stringify({ clientNonce })
             });
 
-            if (!guessResponse.ok) {
+            if (!revealResponse.ok) {
                 window.location.href = '/error';
                 return;
             }
 
-            const { gameOutcome, serverRoll, serverNonce } = await guessResponse.json();
+            const { gameOutcome, serverRoll, clientRoll, serverNonce } = await revealResponse.json();
 
-            const isValid = await verifyCommitment(serverRoll, serverNonce, clientNonce, hashCommitment);
+            const isValid = await verifyServerNonceAndRolls(serverNonce, serverNonceHash, clientNonce, serverRoll, clientRoll);
             if (!isValid) {
                 showError('Server cheating detected! Commitment verification failed.');
                 return;
@@ -76,33 +76,30 @@ document.addEventListener('DOMContentLoaded', () => {
             .join('');
     }
 
-    /**
-     * Generates a fair dice roll (1-6) using rejection sampling to avoid modulo bias.
-     *
-     * Uint8Array gives values 0-255 (256 possible values). Since 256 % 6 = 4, using
-     * simple modulo would make values 1-4 appear 43 times and values 5-6 appear 42 times.
-     *
-     * Solution: Reject values >= 252 (the largest multiple of 6 in 0-255), ensuring each
-     * outcome (1-6) appears exactly 42 times. Rejection happens only 1.5% of the time.
-     */
-    function generateDiceRoll() {
-        const array = new Uint8Array(1);
-        let value;
-        do {
-            crypto.getRandomValues(array);
-            value = array[0];
-        } while (value >= 252);
-        return (value % 6) + 1;
+    async function computeHash(input) {
+        const encoder = new TextEncoder();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(input));
+        return Array.from(new Uint8Array(hashBuffer))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
     }
 
-    async function verifyCommitment(serverRoll, serverNonce, clientNonce, commitment) {
-        const data = serverRoll + serverNonce + clientNonce;
+    async function deriveRoll(role, serverNonce, clientNonce) {
+        const data = role + serverNonce + clientNonce;
         const encoder = new TextEncoder();
-        const dataBuffer = encoder.encode(data);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        return computedHash === commitment;
+        const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(data));
+        const hashBytes = new Uint8Array(hashBuffer);
+        const uint32 = ((hashBytes[0] << 24) | (hashBytes[1] << 16) | (hashBytes[2] << 8) | hashBytes[3]) >>> 0;
+        return (uint32 % 6) + 1;
+    }
+
+    async function verifyServerNonceAndRolls(serverNonce, serverNonceHash, clientNonce, serverRoll, clientRoll) {
+        const computedServerNonceHash = await computeHash(serverNonce);
+        if (computedServerNonceHash !== serverNonceHash) return false;
+
+        const computedServerRoll = await deriveRoll('server', serverNonce, clientNonce);
+        const computedClientRoll = await deriveRoll('client', serverNonce, clientNonce);
+        return computedServerRoll === serverRoll && computedClientRoll === clientRoll;
     }
 
     function showResult(clientRoll, serverRoll, gameOutcome) {

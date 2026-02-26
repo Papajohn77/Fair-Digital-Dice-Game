@@ -14,12 +14,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gr.aueb.casino.api.schemas.response.GameHistoryResponse;
-import gr.aueb.casino.api.schemas.response.GuessResponse;
 import gr.aueb.casino.api.schemas.response.InitiateGameResponse;
+import gr.aueb.casino.api.schemas.response.RevealResponse;
 import gr.aueb.casino.domain.Game;
 import gr.aueb.casino.domain.GameOutcome;
 import gr.aueb.casino.exception.custom.GameAccessDeniedException;
 import gr.aueb.casino.exception.custom.GameNotFoundException;
+import gr.aueb.casino.exception.custom.InvalidNonceException;
 import gr.aueb.casino.persistence.GameRepository;
 import gr.aueb.casino.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,20 +37,19 @@ public class GameService {
     private final SecureRandom secureRandom;
 
     @Transactional
-    public InitiateGameResponse initiateGame(Long userId, String clientNonce) {
+    public InitiateGameResponse initiateGame(Long userId, String clientNonceHash) {
         var user = userRepository.getReferenceById(userId);
 
         String serverNonce = generateNonce();
-        short serverRoll = generateDiceRoll();
-        String hashCommitment = computeCommitment(serverRoll, serverNonce, clientNonce);
+        String serverNonceHash = computeHash(serverNonce);
 
-        Game game = new Game(user, gameStatusCache.getInProgress(), serverRoll, serverNonce, clientNonce, hashCommitment);
+        Game game = new Game(user, gameStatusCache.getInProgress(), serverNonce, clientNonceHash, serverNonceHash);
         game = gameRepository.save(game);
-        return new InitiateGameResponse(game.getId(), game.getHashCommitment());
+        return new InitiateGameResponse(game.getId(), game.getServerNonceHash());
     }
 
     @Transactional
-    public GuessResponse submitGuess(Long gameId, short clientRoll, Long userId) {
+    public RevealResponse revealNonces(Long gameId, String clientNonce, Long userId) {
         Game game = gameRepository.findWithLockById(gameId)
             .orElseThrow(() -> new GameNotFoundException("Game with id: " + gameId + " not found."));
 
@@ -58,36 +58,38 @@ public class GameService {
         }
 
         if (isCompleted(game)) {
-            return new GuessResponse(
+            return new RevealResponse(
                 game.getOutcome().getName(),
                 game.getServerRoll(),
+                game.getClientRoll(),
                 game.getServerNonce()
             );
         }
 
-        if (isExpired(game)) {
-            game.setOutcome(gameOutcomeCache.getExpired());
-            game.setStatus(gameStatusCache.getCompleted());
-            game.setCompletedAt(ZonedDateTime.now());
-            game = gameRepository.save(game);
-
-            return new GuessResponse(
-                game.getOutcome().getName(),
-                game.getServerRoll(),
-                game.getServerNonce()
-            );
+        String expectedHash = computeHash(clientNonce);
+        if (!expectedHash.equals(game.getClientNonceHash())) {
+            throw new InvalidNonceException("Client nonce does not match the committed hash.");
         }
 
-        GameOutcome outcome = determineOutcome(game.getServerRoll(), clientRoll);
+        short serverRoll = deriveRoll("server", game.getServerNonce(), clientNonce);
+        short clientRoll = deriveRoll("client", game.getServerNonce(), clientNonce);
+
+        GameOutcome outcome = isExpired(game)
+            ? gameOutcomeCache.getExpired()
+            : determineOutcome(serverRoll, clientRoll);
+
+        game.setServerRoll(serverRoll);
+        game.setClientRoll(clientRoll);
+        game.setClientNonce(clientNonce);
         game.setOutcome(outcome);
         game.setStatus(gameStatusCache.getCompleted());
         game.setCompletedAt(ZonedDateTime.now());
-        game.setClientRoll(clientRoll);
         game = gameRepository.save(game);
 
-        return new GuessResponse(
+        return new RevealResponse(
             game.getOutcome().getName(),
             game.getServerRoll(),
+            game.getClientRoll(),
             game.getServerNonce()
         );
     }
@@ -98,15 +100,16 @@ public class GameService {
         return HexFormat.of().formatHex(bytes);
     }
 
-    private short generateDiceRoll() {
-        return (short) (secureRandom.nextInt(6) + 1);
+    private String computeHash(String input) {
+        byte[] hash = getSha256().digest(input.getBytes(StandardCharsets.UTF_8));
+        return HexFormat.of().formatHex(hash);
     }
 
-    private String computeCommitment(short serverRoll, String serverNonce, String clientNonce) {
-        String data = serverRoll + serverNonce + clientNonce;
-        MessageDigest sha256 = getSha256();
-        byte[] hash = sha256.digest(data.getBytes(StandardCharsets.UTF_8));
-        return HexFormat.of().formatHex(hash);
+    private short deriveRoll(String role, String serverNonce, String clientNonce) {
+        String data = role + serverNonce + clientNonce;
+        byte[] hash = getSha256().digest(data.getBytes(StandardCharsets.UTF_8));
+        long uint32 = ((hash[0] & 0xFFL) << 24) | ((hash[1] & 0xFFL) << 16) | ((hash[2] & 0xFFL) << 8) | (hash[3] & 0xFFL);
+        return (short) (uint32 % 6 + 1);
     }
 
     private MessageDigest getSha256() {

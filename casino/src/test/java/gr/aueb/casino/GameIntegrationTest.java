@@ -11,6 +11,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +24,6 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.password.CompromisedPasswordChecker;
 import org.springframework.security.authentication.password.CompromisedPasswordDecision;
 import org.springframework.test.context.ActiveProfiles;
@@ -96,36 +99,38 @@ class GameIntegrationTest {
     }
 
     @Test
-    void successfulGameFlowWithClientWin() throws Exception {
+    void successfulGameFlow() throws Exception {
         User user = createUser("player@example.com", TEST_PASSWORD);
 
         String clientNonce = "a".repeat(64);
+        String clientNonceHash = sha256Hex(clientNonce);
 
         MvcResult initiateResult = mockMvc.perform(
             post("/game")
             .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"clientNonce\":\"" + clientNonce + "\"}")
+            .content("{\"clientNonceHash\":\"" + clientNonceHash + "\"}")
             .with(user(new UserDetailsAdapter(user)))
             .with(csrf())
         )
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.gameId", notNullValue()))
-        .andExpect(jsonPath("$.hashCommitment", matchesPattern("^[a-f0-9]{64}$")))
+        .andExpect(jsonPath("$.serverNonceHash", matchesPattern("^[a-f0-9]{64}$")))
         .andReturn();
 
         JsonNode initiateResponse = objectMapper.readTree(initiateResult.getResponse().getContentAsString());
         long gameId = initiateResponse.get("gameId").asLong();
 
         mockMvc.perform(
-            post("/game/" + gameId + "/guess")
+            post("/game/" + gameId + "/reveal")
             .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"clientRoll\":6}")
+            .content("{\"clientNonce\":\"" + clientNonce + "\"}")
             .with(user(new UserDetailsAdapter(user)))
             .with(csrf())
         )
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.gameOutcome").exists())
         .andExpect(jsonPath("$.serverRoll", allOf(greaterThanOrEqualTo(1), lessThanOrEqualTo(6))))
+        .andExpect(jsonPath("$.clientRoll", allOf(greaterThanOrEqualTo(1), lessThanOrEqualTo(6))))
         .andExpect(jsonPath("$.serverNonce", matchesPattern("^[a-f0-9]{64}$")));
     }
 
@@ -135,26 +140,27 @@ class GameIntegrationTest {
         User user2 = createUser("user2@example.com", TEST_PASSWORD);
 
         String clientNonce = "c".repeat(64);
+        String clientNonceHash = sha256Hex(clientNonce);
 
         MvcResult initiateResult = mockMvc.perform(
             post("/game")
             .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"clientNonce\":\"" + clientNonce + "\"}")
+            .content("{\"clientNonceHash\":\"" + clientNonceHash + "\"}")
             .with(user(new UserDetailsAdapter(user1)))
             .with(csrf())
         )
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.gameId", notNullValue()))
-        .andExpect(jsonPath("$.hashCommitment", matchesPattern("^[a-f0-9]{64}$")))
+        .andExpect(jsonPath("$.serverNonceHash", matchesPattern("^[a-f0-9]{64}$")))
         .andReturn();
 
         JsonNode initiateResponse = objectMapper.readTree(initiateResult.getResponse().getContentAsString());
         long gameId = initiateResponse.get("gameId").asLong();
 
         mockMvc.perform(
-            post("/game/" + gameId + "/guess")
+            post("/game/" + gameId + "/reveal")
             .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"clientRoll\":3}")
+            .content("{\"clientNonce\":\"" + clientNonce + "\"}")
             .with(user(new UserDetailsAdapter(user2)))
             .with(csrf())
         )
@@ -166,9 +172,9 @@ class GameIntegrationTest {
         User user = createUser("player@example.com", TEST_PASSWORD);
 
         mockMvc.perform(
-            post("/game/999999/guess")
+            post("/game/999999/reveal")
             .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"clientRoll\":3}")
+            .content("{\"clientNonce\":\"" + "d".repeat(64) + "\"}")
             .with(user(new UserDetailsAdapter(user)))
             .with(csrf())
         )
@@ -178,5 +184,11 @@ class GameIntegrationTest {
     private User createUser(String email, String password) {
         User user = new User("Test", "User", email, password);
         return userRepository.save(user);
+    }
+
+    private String sha256Hex(String input) throws Exception {
+        MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+        byte[] hashBytes = sha256.digest(input.getBytes(StandardCharsets.UTF_8));
+        return HexFormat.of().formatHex(hashBytes);
     }
 }
